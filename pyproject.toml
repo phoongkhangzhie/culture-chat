@@ -1,0 +1,17 @@
+[project]
+name = "culture-chat"
+version = "0.1.0"
+description = "Annotate WildChat conversations for cultural relevance using the CultureScope taxonomy."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40.0",
+    "datasets>=2.21.0",
+    "pydantic>=2.7.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
