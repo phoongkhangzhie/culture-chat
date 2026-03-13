@@ -172,7 +172,7 @@ def _print_stats(annotations: list) -> None:
             dim_names[m.dimension_key] = m.dimension_name
 
     if dim_counts:
-        console.rule("[bold]Top 20 Dimensions[/bold]")
+        console.rule("[bold]Dimensions[/bold]")
         dim_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
         dim_table.add_column("Rank",       justify="right",  style="dim", width=5)
         dim_table.add_column("Key",        style="cyan",     no_wrap=True)
@@ -181,7 +181,7 @@ def _print_stats(annotations: list) -> None:
         dim_table.add_column("%",          justify="right",  style="dim")
         dim_table.add_column("Avg Conf",   justify="right",  style="yellow")
 
-        for rank, (key, cnt) in enumerate(dim_counts.most_common(20), 1):
+        for rank, (key, cnt) in enumerate(dim_counts.most_common(), 1):
             avg_conf = dim_conf_sums[key] / cnt
             dim_table.add_row(
                 str(rank),
@@ -203,13 +203,13 @@ def _print_stats(annotations: list) -> None:
             country_relevant[c] += 1
 
     if len(country_total) > 1:
-        console.rule("[bold]Top 15 Countries[/bold]")
+        console.rule("[bold]Countries[/bold]")
         cty_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
         cty_table.add_column("Country",    style="blue")
         cty_table.add_column("Total",      justify="right")
         cty_table.add_column("Relevant",   justify="right", style="bold green")
         cty_table.add_column("Rel %",      justify="right", style="dim")
-        for country, tot in country_total.most_common(15):
+        for country, tot in country_total.most_common():
             rel = country_relevant[country]
             cty_table.add_row(country, str(tot), str(rel), f"{rel/tot*100:.1f}%")
         console.print(cty_table)
