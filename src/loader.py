@@ -1,8 +1,8 @@
 """
 WildChat dataset loader.
 
-Streams the WildChat-1M dataset from HuggingFace and yields conversations
-that meet the minimum turn count threshold.
+Loads the WildChat-1M dataset from HuggingFace (non-streaming) and yields
+conversations that meet the minimum turn count threshold.
 
 WildChat schema reference:
   https://huggingface.co/datasets/allenai/WildChat-1M
@@ -34,9 +34,7 @@ def _row_to_conversation(row: dict) -> Conversation:
         language=row.get("language"),
         country=row.get("country"),
         metadata={
-            k: row[k]
-            for k in ("model", "toxic", "redacted", "state")
-            if k in row
+            k: row[k] for k in ("model", "toxic", "redacted", "state") if k in row
         },
     )
 
@@ -48,7 +46,7 @@ def load_wildchat(
     language_filter: Optional[str] = None,
 ) -> Iterator[Conversation]:
     """
-    Stream WildChat conversations that satisfy the filters.
+    Load WildChat conversations that satisfy the filters.
 
     Args:
         min_turns:          Minimum number of turns (user + assistant combined).
@@ -65,12 +63,7 @@ def load_wildchat(
             "Install the `datasets` package: pip install datasets"
         ) from exc
 
-    dataset = load_dataset(
-        "allenai/WildChat-1M",
-        split=split,
-        streaming=True,
-        trust_remote_code=True,
-    )
+    dataset = load_dataset("allenai/WildChat-1M", split=split)
 
     yielded = 0
     for row in dataset:
@@ -79,9 +72,7 @@ def load_wildchat(
         if len(conv.turns) < min_turns:
             continue
 
-        if language_filter and (
-            conv.language or ""
-        ).lower() != language_filter.lower():
+        if language_filter and (conv.language or "").lower() != language_filter.lower():
             continue
 
         yield conv

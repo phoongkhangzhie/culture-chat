@@ -18,6 +18,9 @@ import logging
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 def _setup_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
@@ -37,9 +40,14 @@ def cmd_annotate(args: argparse.Namespace) -> None:
     from src.loader import load_wildchat
     from src.models import Conversation, Turn
 
-    annotator = Annotator(model=args.model, max_tokens=args.max_tokens)
+    annotator = Annotator(
+        backend=args.backend,
+        model=args.model,
+        base_url=args.base_url,
+        max_tokens=args.max_tokens,
+        requests_per_minute=args.requests_per_minute,
+    )
     output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     conversations: list[Conversation]
 
@@ -71,11 +79,7 @@ def cmd_annotate(args: argparse.Namespace) -> None:
             )
         )
 
-    annotations = annotator.annotate_batch(conversations, on_error="skip")
-
-    with open(output_path, "w") as f:
-        for ann in annotations:
-            f.write(ann.model_dump_json() + "\n")
+    annotations = annotator.annotate_batch(conversations, output_path=output_path, on_error="skip")
 
     print(f"Annotated {len(annotations)} conversations → {output_path}")
     _print_stats(annotations)
@@ -160,8 +164,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann = sub.add_parser("annotate", help="Annotate conversations and write JSONL output")
     p_ann.add_argument("--input", "-i", help="Local JSONL file of conversations (from `sample`). If omitted, streams from HuggingFace.")
     p_ann.add_argument("--output", "-o", required=True, help="Output JSONL file for annotations")
-    p_ann.add_argument("--model", default="claude-opus-4-6", help="Anthropic model to use")
+    p_ann.add_argument("--backend", default="anthropic", choices=["anthropic", "vllm"], help="Backend to use (default: anthropic)")
+    p_ann.add_argument("--model", default="claude-sonnet-4-6", help="Model name (Claude ID for anthropic, served model name for vllm)")
+    p_ann.add_argument("--base-url", default="http://localhost:8000/v1", help="vLLM base URL (only used with --backend vllm)")
     p_ann.add_argument("--max-tokens", type=int, default=2048)
+    p_ann.add_argument("--requests-per-minute", type=int, default=5, help="Max API requests per minute (default 5)")
     p_ann.add_argument("--min-turns", type=int, default=6, help="Minimum conversation turns (default 6)")
     p_ann.add_argument("--max-conversations", type=int, default=None, help="Cap on conversations to annotate")
     p_ann.add_argument("--language", default=None, help="Filter by language (e.g. 'English')")
@@ -169,7 +176,7 @@ def build_parser() -> argparse.ArgumentParser:
     # -- sample --
     p_sam = sub.add_parser("sample", help="Download and save a WildChat sample to JSONL")
     p_sam.add_argument("--output", "-o", required=True, help="Output JSONL file")
-    p_sam.add_argument("--n", type=int, default=100, help="Number of conversations to save")
+    p_sam.add_argument("--n", type=int, default=None, help="Number of conversations to save")
     p_sam.add_argument("--min-turns", type=int, default=6)
     p_sam.add_argument("--language", default=None)
 

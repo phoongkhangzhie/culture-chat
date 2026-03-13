@@ -12,3 +12,4 @@ build/
 output/
 logs/
 .DS_Store
+*.lock
