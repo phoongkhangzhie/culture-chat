@@ -19,9 +19,9 @@ culture-chat/
 └── src/
     ├── models.py    # Pydantic types: Conversation, Annotation, DimensionMatch
     ├── taxonomy.py  # Full CultureScope taxonomy (~130 fine-grained dimensions)
-    ├── loader.py    # Streams WildChat-1M from HuggingFace with turn-count filter
+    ├── loader.py    # Loads WildChat-1M from HuggingFace with turn-count filter
     ├── prompts.py   # System + user prompt templates sent to the model
-    └── annotator.py # Anthropic API calls, JSON parsing, retry logic
+    └── annotator.py # API calls (Anthropic / OpenAI / vLLM), JSON parsing, retry logic
 ```
 
 ---
@@ -33,11 +33,15 @@ culture-chat/
 git clone https://github.com/phoongkhangzhie/culture-chat.git
 cd culture-chat
 
-# Install dependencies (Python >=3.12)
+# Install dependencies with uv (Python >=3.12)
+uv sync
+
+# Or with pip
 pip install -e .
 
-# Set your Anthropic API key
-export ANTHROPIC_API_KEY=sk-...
+# Add your API key(s) to a .env file
+echo "ANTHROPIC_API_KEY=sk-..." > .env
+echo "OPENAI_API_KEY=sk-..."   >> .env
 ```
 
 ---
@@ -46,7 +50,7 @@ export ANTHROPIC_API_KEY=sk-...
 
 ### Step 1 — Sample conversations from WildChat
 
-WildChat-1M is a large dataset; it is faster to save a local sample first before annotating.
+WildChat-1M is a large dataset; saving a local sample first is faster than streaming during annotation.
 
 ```bash
 python main.py sample \
@@ -58,7 +62,7 @@ python main.py sample \
 
 | Flag | Default | Description |
 |---|---|---|
-| `--n` | 100 | Number of conversations to save |
+| `--n` | *(all)* | Number of conversations to save |
 | `--min-turns` | 6 | Minimum combined user + assistant turns |
 | `--language` | *(all)* | Filter by WildChat's `language` field (e.g. `English`, `Chinese`) |
 | `--output` | required | Output JSONL path |
@@ -73,8 +77,8 @@ Each line of the output JSONL is a serialised `Conversation` object:
     {"role": "assistant", "content": "..."}
   ],
   "language": "English",
-  "country": "US",
-  "metadata": {"model": "gpt-4", "toxic": false}
+  "country": "United States",
+  "metadata": {}
 }
 ```
 
@@ -84,9 +88,10 @@ Each line of the output JSONL is a serialised `Conversation` object:
 
 ```bash
 python main.py annotate \
-  --input output/sample.jsonl \
+  --input  output/sample.jsonl \
   --output output/annotations.jsonl \
-  --model claude-opus-4-6
+  --backend anthropic \
+  --model   claude-sonnet-4-6
 ```
 
 You can also skip Step 1 and stream directly from HuggingFace:
@@ -103,36 +108,72 @@ python main.py annotate \
 |---|---|---|
 | `--input` | *(stream)* | Local JSONL from `sample`; omit to stream from HuggingFace |
 | `--output` | required | Annotation output JSONL |
-| `--model` | `claude-opus-4-6` | Anthropic model |
+| `--backend` | `anthropic` | `anthropic`, `openai`, or `vllm` |
+| `--model` | `claude-sonnet-4-6` | Model ID for the chosen backend |
+| `--base-url` | `http://localhost:8000/v1` | vLLM server URL (only used with `--backend vllm`) |
 | `--max-tokens` | 2048 | Max tokens in the model response |
+| `--requests-per-minute` | 5 | API rate limit (requests/min) |
 | `--min-turns` | 6 | Only used when streaming (ignored if `--input` is set) |
 | `--max-conversations` | *(all)* | Hard cap on conversations to annotate |
 | `--language` | *(all)* | Language filter when streaming |
+
+The run is **resumable** — if it is interrupted, re-run the same command and already-annotated conversation IDs will be skipped automatically.
 
 ---
 
 ### Step 3 — Inspect statistics
 
 ```bash
+# Print to terminal
 python main.py stats --input output/annotations.jsonl
+
+# Write to a file
+python main.py stats --input output/annotations.jsonl --output output/stats.txt
 ```
 
-Example output:
+The stats report includes:
+- Overview (total, relevant %, avg dimensions per relevant conversation, avg turns)
+- Full dimension breakdown ranked by frequency with average confidence
+- Full country breakdown with relevance rate per country
+- Model breakdown (when annotations from multiple models are mixed)
 
+| Flag | Default | Description |
+|---|---|---|
+| `--input` | required | Annotation JSONL file |
+| `--output` | *(terminal)* | Optional path to write the stats report as a text file |
+
+---
+
+## Backends
+
+### Anthropic (default)
+
+Uses the Anthropic API. Requires `ANTHROPIC_API_KEY` in your environment or `.env`.
+
+```bash
+python main.py annotate --backend anthropic --model claude-sonnet-4-6 ...
 ```
-==================================================
-  Total annotated:       500
-  Culturally relevant:   312  (62.4%)
-  Culturally neutral:    188  (37.6%)
 
-  Top 10 dimensions:
-    guest_hospitality                             47
-    eating_habits                                 38
-    religious_holidays                            31
-    verbal_communication_style                    28
-    collectivism                                  22
-    ...
-==================================================
+### OpenAI
+
+Uses the OpenAI API. Requires `OPENAI_API_KEY`.
+
+```bash
+python main.py annotate --backend openai --model gpt-4o ...
+```
+
+### vLLM (local)
+
+Runs against a locally-served vLLM endpoint via the OpenAI-compatible API.
+
+```bash
+python main.py annotate --backend vllm --model Qwen/Qwen3-30B-A3B --base-url http://localhost:8000/v1 ...
+```
+
+For a full end-to-end vLLM run (start server → annotate → stop server) use the helper script:
+
+```bash
+bash scripts/run.sh output/sample.jsonl output/annotations-vllm.jsonl
 ```
 
 ---
@@ -154,11 +195,14 @@ Conversation (≥ 6 turns)
 │     • specifies required JSON schema        │
 │                                             │
 │  2. _call_with_retry()                      │
-│     • sends system + user prompt to         │
-│       Anthropic API                         │
+│     • sends system + user prompt to the     │
+│       chosen backend                        │
+│     • throttles to respect --requests-per-  │
+│       minute limit                          │
 │     • retries on rate-limit / API errors    │
 │                                             │
 │  3. _parse_response()                       │
+│     • strips any markdown fences            │
 │     • parses model JSON                     │
 │     • validates into Annotation object      │
 └─────────────────────────────────────────────┘
@@ -185,7 +229,6 @@ Conversation (≥ 6 turns)
     {
       "dimension_key": "shoe_etiquette",
       "dimension_name": "Shoe Etiquette During a Visit",
-      "category": "Behavioral Patterns > Personal Choices & Habits > Personal Etiquette",
       "indicators": [
         "Should I take off my shoes before entering?",
         "In Japan it is customary to remove shoes at the genkan"
@@ -207,11 +250,11 @@ Conversation (≥ 6 turns)
 | `relevant_dimensions` | list | One entry per matched CultureScope dimension |
 | `relevant_dimensions[].dimension_key` | str | Key from the CultureScope taxonomy |
 | `relevant_dimensions[].dimension_name` | str | Human-readable dimension name |
-| `relevant_dimensions[].category` | str | `Layer > Category > Topic Aspect` path |
 | `relevant_dimensions[].indicators` | list[str] | Verbatim text spans from the conversation |
 | `relevant_dimensions[].confidence` | float | 0–1 annotator confidence |
 | `reasoning` | str | 1–3 sentence justification |
-| `metadata.model` | str | Anthropic model used |
+| `metadata.model` | str | Model used for annotation |
+| `metadata.backend` | str | Backend used (`anthropic`, `openai`, or `vllm`) |
 | `metadata.annotated_at` | str | ISO 8601 UTC timestamp |
 | `metadata.country` | str | WildChat `country` field (if available) |
 | `metadata.language` | str | WildChat `language` field (if available) |
@@ -220,15 +263,39 @@ Conversation (≥ 6 turns)
 
 ## CultureScope Taxonomy
 
-The taxonomy has three layers, seven categories, and ~130 fine-grained dimensions:
+The taxonomy has three layers, five L2 subcategories, and ~130 fine-grained dimensions:
 
-| Layer | Categories |
+| Layer 1 | Layer 2 Subcategory |
 |---|---|
-| **1 — Institutional Norms** | Geography & Customs, Regulation & Policy |
-| **2 — Behavioral Patterns** | Daily Life & Travel, Diet & Health, Education & Knowledge, Art & Entertainment, Personal Etiquette, Etiquette & Courtesy, Communication Style, Fixed Expressions |
-| **3 — Core Values** | Family Dynamics, Household Structures, Gender Roles, Cultural Values, Religion, Do's & Don'ts |
+| **Institutional Norms** | Geography & Customs |
+| **Institutional Norms** | Regulation & Policy |
+| **Behavioral Patterns** | Personal Choices & Habits |
+| **Core Values and Social Structures** | Social Relationship and Structures |
+| **Core Values and Social Structures** | Values and Beliefs |
 
 See [`src/taxonomy.py`](src/taxonomy.py) for the full list of dimension keys and descriptions.
+
+---
+
+## Model Comparison Findings
+
+Annotations were run on the same 100 English WildChat conversations (≥ 6 turns) using three models. Key findings:
+
+| Model | Relevant % | Avg dims / relevant conv | Notes |
+|---|---|---|---|
+| Claude Sonnet 4.6 | 40.8% | 5.5 | Most liberal; longest reasoning; strong on societal/structural dimensions |
+| GPT-4.5 | 32.3% | 4.9 | Mid-range; unique `cultural_acknowledgement` dimension; over-annotates fictional worldbuilding |
+| Qwen3-30B-A3B | 28.4% | 6.9 | Most conservative; highest dims-per-flagged-conv; strong on humour/idioms; over-reads tech culture |
+
+**Inter-model agreement** on 94 matched conversations (3-way Jaccard):
+
+| Level | Avg Jaccard |
+|---|---|
+| Fine-grained dimension | 0.21 (agreed-relevant) / 0.08 (all non-neutral) |
+| L2 subcategory | 0.54 / 0.20 |
+| L1 layer | 0.61 / 0.23 |
+
+The models agree much better on *which broad cultural domain* is present than on *which specific dimension* applies. **L2-level rollups are significantly more reliable** for downstream analysis than individual dimension counts.
 
 ---
 
@@ -238,8 +305,10 @@ Edit [`config.py`](config.py) or set environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Required — your Anthropic API key |
-| `CULTURE_CHAT_MODEL` | `claude-opus-4-6` | Model used for annotation |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key |
+| `OPENAI_API_KEY` | — | OpenAI API key |
+| `CULTURE_CHAT_BACKEND` | `anthropic` | Default backend |
+| `CULTURE_CHAT_MODEL` | `claude-sonnet-4-6` | Default model |
 | `CULTURE_CHAT_MAX_TOKENS` | `2048` | Max tokens in annotation response |
 | `CULTURE_CHAT_MIN_TURNS` | `6` | Minimum conversation turns |
 | `CULTURE_CHAT_OUTPUT_DIR` | `./output` | Default output directory |
