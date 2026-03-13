@@ -112,7 +112,7 @@ def cmd_sample(args: argparse.Namespace) -> None:
 # stats command
 # ---------------------------------------------------------------------------
 
-def _print_stats(annotations: list) -> None:
+def _print_stats(annotations: list, output_path: Path | None = None) -> None:
     from collections import Counter, defaultdict
     from statistics import mean, median
 
@@ -120,7 +120,13 @@ def _print_stats(annotations: list) -> None:
     from rich.table import Table
     from rich import box
 
-    console = Console()
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fh = open(output_path, "w")
+        console = Console(file=fh, highlight=False)
+    else:
+        fh = None
+        console = Console()
     total = len(annotations)
     if not total:
         console.print("[yellow]No annotations to report.[/yellow]")
@@ -235,6 +241,10 @@ def _print_stats(annotations: list) -> None:
             mdl_table.add_row(model, str(tot), str(rel), f"{rel/tot*100:.1f}%")
         console.print(mdl_table)
 
+    if fh:
+        fh.close()
+        print(f"Stats written → {output_path}")
+
 
 def cmd_stats(args: argparse.Namespace) -> None:
     from src.models import Annotation
@@ -244,7 +254,8 @@ def cmd_stats(args: argparse.Namespace) -> None:
         for line in f:
             annotations.append(Annotation.model_validate_json(line))
 
-    _print_stats(annotations)
+    output_path = Path(args.output) if args.output else None
+    _print_stats(annotations, output_path=output_path)
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
     # -- stats --
     p_sta = sub.add_parser("stats", parents=[verbose_parser], help="Print statistics from an annotation JSONL file")
     p_sta.add_argument("--input", "-i", required=True, help="Annotation JSONL file")
+    p_sta.add_argument("--output", "-o", default=None, help="Write stats to a text file instead of (or in addition to) the terminal")
 
     return parser
 

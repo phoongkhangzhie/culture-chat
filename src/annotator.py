@@ -213,9 +213,15 @@ class Annotator:
 
     def _call_openai_compatible(self, user_prompt: str) -> str:
         """Shared call for both OpenAI API and vLLM (OpenAI-compatible)."""
+        # OpenAI API requires max_completion_tokens; vLLM uses max_tokens
+        token_kwarg = (
+            {"max_completion_tokens": self.max_tokens}
+            if self.backend == "openai"
+            else {"max_tokens": self.max_tokens}
+        )
         response = self._openai_client.chat.completions.create(
             model=self.model,
-            max_tokens=self.max_tokens,
+            **token_kwarg,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
