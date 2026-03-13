@@ -101,7 +101,6 @@ Return a single JSON object with this exact structure:
     {{
       "dimension_key": "<key from the list above>",
       "dimension_name": "<name>",
-      "category": "<category string>",
       "indicators": ["<verbatim or near-verbatim text span from conversation>"],
       "confidence": <0.0 – 1.0>
     }}

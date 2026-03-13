@@ -161,17 +161,15 @@ def _print_stats(annotations: list) -> None:
     console.print(overview)
 
     # ── Dimension frequency ─────────────────────────────────────────────────
-    dim_counts:      Counter = Counter()
-    dim_conf_sums:   dict    = defaultdict(float)
-    dim_names:       dict    = {}
-    dim_categories:  dict    = {}
+    dim_counts:    Counter = Counter()
+    dim_conf_sums: dict    = defaultdict(float)
+    dim_names:     dict    = {}
 
     for ann in annotations:
         for m in ann.relevant_dimensions:
             dim_counts[m.dimension_key] += 1
             dim_conf_sums[m.dimension_key] += m.confidence
-            dim_names[m.dimension_key]      = m.dimension_name
-            dim_categories[m.dimension_key] = m.category
+            dim_names[m.dimension_key] = m.dimension_name
 
     if dim_counts:
         console.rule("[bold]Top 20 Dimensions[/bold]")
@@ -194,26 +192,6 @@ def _print_stats(annotations: list) -> None:
                 f"{avg_conf:.2f}",
             )
         console.print(dim_table)
-
-    # ── Category rollup ─────────────────────────────────────────────────────
-    cat_counts: Counter = Counter()
-    for key, cnt in dim_counts.items():
-        # category string is "Layer > Category > Topic Aspect"
-        # roll up to "Layer > Category"
-        parts = dim_categories.get(key, "Unknown").split(" > ")
-        cat_label = " > ".join(parts[:2]) if len(parts) >= 2 else parts[0]
-        cat_counts[cat_label] += cnt
-
-    if cat_counts:
-        console.rule("[bold]Category Breakdown[/bold]")
-        cat_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
-        cat_table.add_column("Category", style="magenta")
-        cat_table.add_column("Count",    justify="right", style="bold green")
-        cat_table.add_column("%",        justify="right", style="dim")
-        total_matches = sum(cat_counts.values())
-        for cat, cnt in cat_counts.most_common():
-            cat_table.add_row(cat, str(cnt), f"{cnt/total_matches*100:.1f}%")
-        console.print(cat_table)
 
     # ── Country breakdown ────────────────────────────────────────────────────
     country_total:    Counter = Counter()

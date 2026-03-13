@@ -40,7 +40,6 @@ class DimensionMatch(BaseModel):
 
     dimension_key: str
     dimension_name: str
-    category: str
     indicators: list[str] = Field(
         description="Verbatim or near-verbatim text spans from the conversation that signal this dimension"
     )

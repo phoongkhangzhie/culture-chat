@@ -241,7 +241,6 @@ class Annotator:
             DimensionMatch(
                 dimension_key=d.get("dimension_key", ""),
                 dimension_name=d.get("dimension_name", ""),
-                category=d.get("category", ""),
                 indicators=d.get("indicators", []),
                 confidence=float(d.get("confidence", 0.0)),
             )
