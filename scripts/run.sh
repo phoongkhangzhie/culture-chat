@@ -28,10 +28,10 @@ fi
 
 INPUT_JSONL="$1"
 OUTPUT_JSONL="$2"
-TENSOR_PARALLEL="${3:-1}"
+TENSOR_PARALLEL="${3:-2}"
 
 VLLM_PORT="${VLLM_PORT:-8000}"
-VLLM_MODEL="${VLLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}"
+VLLM_MODEL="${VLLM_MODEL:-/nlp/scr/phoongkz/models/Qwen-Qwen3-30B-A3B-Instruct-2507}"
 VLLM_BASE_URL="http://localhost:${VLLM_PORT}/v1"
 VLLM_LOG="logs/vllm-$$.log"
 WAIT_TIMEOUT=2700   # 45 min — covers large model loads
@@ -94,8 +94,7 @@ python main.py annotate \
     --base-url "${VLLM_BASE_URL}" \
     --input "${INPUT_JSONL}" \
     --output "${OUTPUT_JSONL}" \
-    --requests-per-minute "${RPM}" \
-    --verbose
+    --requests-per-minute "${RPM}"
 
 # ---------------------------------------------------------------------------
 # 4. Shut down vLLM cleanly

@@ -1,0 +1,126 @@
+────────────────────────────────────────────────────────────── Annotation Summary ───────────────────────────────────────────────────────────────
+                                                          
+   Total annotated                         95             
+   Culturally relevant                     27     28.4%   
+   Culturally neutral                      68     71.6%   
+   Avg dimensions / relevant conv         6.9             
+   Median dimensions / relevant conv      6.0             
+   Avg turns (all)                       10.6             
+   Avg turns (relevant)                  11.0             
+   Avg turns (neutral)                   10.4             
+                                                          
+────────────────────────────────────────────────────────────────── Dimensions ───────────────────────────────────────────────────────────────────
+                                                                                                                           
+   Rank   Key                                Name                                                Count       %   Avg Conf  
+ ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+      1   cultural_humour                    Cultural Humour                                        15   15.8%       0.80  
+      2   cultural_holidays                  Cultural Holidays and Festivals                        13   13.7%       0.79  
+      3   linguistic_idioms                  Linguistic Idioms                                      12   12.6%       0.89  
+      4   common_sayings                     Common Sayings                                          8    8.4%       0.83  
+      5   education_as_value                 Education as a Cultural Value                           8    8.4%       0.84  
+      6   individualism                      Individualism                                           6    6.3%       0.86  
+      7   changing_gender_attitudes          Changing Attitudes Toward Gender                        5    5.3%       0.88  
+      8   eating_habits                      Eating Habits                                           4    4.2%       0.83  
+      9   festival_celebrations              Festival Celebration Practices                          4    4.2%       0.89  
+     10   gender_social_compliance           Gender Social Compliance                                4    4.2%       0.89  
+     11   contemporary_art                   Contemporary Art and Culture                            4    4.2%       0.85  
+     12   traditional_vs_modern_medicine     Traditional vs. Modern Medicine                         4    4.2%       0.79  
+     13   cultural_insults                   Cultural Insults                                        4    4.2%       0.81  
+     14   marriage_customs                   Marriage Customs                                        4    4.2%       0.89  
+     15   main_regions                       Main Regions                                            3    3.2%       0.93  
+     16   official_languages                 Official Languages                                      3    3.2%       0.90  
+     17   widely_spoken_languages            Widely Spoken Languages                                 3    3.2%       0.90  
+     18   urban_rural_divide                 Urban-Rural Divide                                      3    3.2%       0.88  
+     19   collectivism                       Collectivism                                            3    3.2%       0.80  
+     20   religious_holidays                 Religious Holidays                                      3    3.2%       0.92  
+     21   achievement_motivation             Motivation Toward Achievement and Success               3    3.2%       0.90  
+     22   academic_major_selection           Academic Major Selection                                3    3.2%       0.82  
+     23   political_criticism_norms          Political Criticism Norms                               2    2.1%       0.93  
+     24   national_holidays                  National Holidays                                       2    2.1%       0.68  
+     25   neologisms_and_abbreviations       Neologisms and Abbreviations                            2    2.1%       0.88  
+     26   festival_symbols                   Festival Symbols                                        2    2.1%       0.82  
+     27   uncertainty_avoidance              Uncertainty Avoidance                                   2    2.1%       0.72  
+     28   punctuality_visiting               Punctuality When Visiting                               2    2.1%       0.69  
+     29   religious_beliefs_and_practices    Religious Beliefs and Practices                         2    2.1%       0.95  
+     30   power_distance                     Power Distance                                          2    2.1%       0.90  
+     31   career_choices                     Career Choices and Aspirations                          2    2.1%       0.91  
+     32   teacher_student_relationship       Teacher-Student Relationship                            2    2.1%       0.84  
+     33   patriarchal_structures             Patriarchal Structures                                  2    2.1%       0.80  
+     34   financial_regulation_structure     Financial Regulation Structure                          2    2.1%       0.75  
+     35   educational_practices              Educational Practices                                   2    2.1%       0.85  
+     36   verbal_communication_style         Verbal Communication Style                              2    2.1%       0.84  
+     37   social_media_usage                 Social Media Usage Patterns                             1    1.1%       0.95  
+     38   male_dominance                     Male Dominance                                          1    1.1%       0.80  
+     39   festival_origins                   Origin of Festivals                                     1    1.1%       0.90  
+     40   retrofuturistic_aesthetic          Retrofuturistic Aesthetic                               1    1.1%       0.95  
+     41   indirect_communication             Indirect Communication                                  1    1.1%       0.92  
+     42   physical_contact_norms             Physical Contact Norms                                  1    1.1%       0.93  
+     43   personality                        Personality                                             1    1.1%       0.95  
+     44   physical_appearance                Physical Appearance                                     1    1.1%       0.90  
+     45   attire                             Attire                                                  1    1.1%       0.85  
+     46   skills_and_abilities               Skills and Abilities                                    1    1.1%       0.92  
+     47   background                         Background                                              1    1.1%       0.94  
+     48   proverbs                           Proverbs                                                1    1.1%       0.70  
+     49   climate_geography                  Climate and Physical Geography                          1    1.1%       0.85  
+     50   pet_raising_habits                 Pet-Raising Habits                                      1    1.1%       0.95  
+     51   naming_convention                  Naming Convention                                       1    1.1%       0.85  
+     52   family_dynamics                    Family Dynamics                                         1    1.1%       0.90  
+     53   social_class_structure             Social Class and Hierarchy                              1    1.1%       0.95  
+     54   long_term_orientation              Long-Term Orientation                                   1    1.1%       0.80  
+     55   personal_space_norms               Personal Space                                          1    1.1%       0.80  
+     56   eye_contact_norms                  Eye Contact Norms                                       1    1.1%       0.80  
+     57   gift_giving_gesture                Handing Gifts                                           1    1.1%       0.70  
+     58   communal_living                    Communal Living                                         1    1.1%       0.80  
+     59   seniority_and_childhood            Seniority and Childhood                                 1    1.1%       0.90  
+     60   lgbt_acceptance                    LGBT Acceptance                                         1    1.1%       0.98  
+     61   travel_habits                      Travel Habits                                           1    1.1%       0.92  
+     62   compliment_norms                   Compliment Norms                                        1    1.1%       0.75  
+     63   womens_family_roles                Women's Roles in the Family                             1    1.1%       0.70  
+     64   cultural_stereotyping              Cultural Stereotyping                                   1    1.1%       0.80  
+     65   modest_dress_norms                 Modest Dress Norms                                      1    1.1%       0.80  
+     66   pork_dietary_norms                 Pork and Dietary Taboos                                 1    1.1%       0.60  
+     67   measurement_system                 Measurement System                                      1    1.1%       0.70  
+     68   fintech_regulation                 FinTech Regulation                                      1    1.1%       0.75  
+     69   attitudes_lifecycle                Attitudes Toward Birth, Aging, Illness, and Death       1    1.1%       0.80  
+     70   vehicle_movement_rules             Vehicle Movement Rules                                  1    1.1%       0.90  
+     71   traffic_signs_and_signals          Traffic Signs and Signals                               1    1.1%       0.95  
+     72   motor_vehicle_driving_rules        Motor Vehicle Driving Rules                             1    1.1%       0.85  
+     73   legal_procedure_and_jurisdiction   Legal Procedure and Jurisdiction                        1    1.1%       0.90  
+     74   judicial_address                   Judicial Address                                        1    1.1%       0.95  
+     75   class_system                       Class System                                            1    1.1%       0.95  
+     76   widespread_languages               Widely Spoken Languages                                 1    1.1%       0.92  
+                                                                                                                           
+─────────────────────────────────────────────────────────────────── Countries ───────────────────────────────────────────────────────────────────
+                                               
+  Country           Total   Relevant    Rel %  
+ ───────────────────────────────────────────── 
+  United States        27          7    25.9%  
+  Canada               11          0     0.0%  
+  Philippines           8          7    87.5%  
+  Japan                 6          1    16.7%  
+  Germany               5          1    20.0%  
+  India                 5          2    40.0%  
+  Mexico                3          0     0.0%  
+  Uruguay               3          2    66.7%  
+  Russia                3          1    33.3%  
+  Brazil                2          0     0.0%  
+  United Kingdom        2          1    50.0%  
+  Türkiye               2          1    50.0%  
+  Pakistan              2          1    50.0%  
+  Cuba                  1          0     0.0%  
+  Belgium               1          0     0.0%  
+  Morocco               1          0     0.0%  
+  Argentina             1          0     0.0%  
+  Australia             1          1   100.0%  
+  Finland               1          0     0.0%  
+  Hong Kong             1          1   100.0%  
+  The Netherlands       1          0     0.0%  
+  Egypt                 1          0     0.0%  
+  Sweden                1          0     0.0%  
+  Romania               1          0     0.0%  
+  China                 1          0     0.0%  
+  France                1          0     0.0%  
+  Malaysia              1          0     0.0%  
+  Guam                  1          0     0.0%  
+  Norway                1          1   100.0%  
+                                               
