@@ -113,27 +113,149 @@ def cmd_sample(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 def _print_stats(annotations: list) -> None:
+    from collections import Counter, defaultdict
+    from statistics import mean, median
+
+    from rich.console import Console
+    from rich.table import Table
+    from rich import box
+
+    console = Console()
     total = len(annotations)
-    relevant = sum(1 for a in annotations if a.is_culturally_relevant)
-    neutral = total - relevant
+    if not total:
+        console.print("[yellow]No annotations to report.[/yellow]")
+        return
 
-    print(f"\n{'='*50}")
-    print(f"  Total annotated:       {total}")
-    print(f"  Culturally relevant:   {relevant}  ({relevant/total*100:.1f}%)" if total else "  No annotations.")
-    print(f"  Culturally neutral:    {neutral}  ({neutral/total*100:.1f}%)" if total else "")
+    relevant_anns = [a for a in annotations if a.is_culturally_relevant]
+    neutral_anns  = [a for a in annotations if not a.is_culturally_relevant]
+    relevant = len(relevant_anns)
+    neutral  = len(neutral_anns)
 
-    # Dimension frequency
-    from collections import Counter
-    dim_counter: Counter = Counter()
+    # ── Overview ────────────────────────────────────────────────────────────
+    console.rule("[bold]Annotation Summary[/bold]")
+    overview = Table(box=box.SIMPLE, show_header=False, padding=(0, 2))
+    overview.add_column(style="dim")
+    overview.add_column(justify="right", style="bold")
+    overview.add_column(justify="right", style="dim")
+    overview.add_row("Total annotated",       str(total),    "")
+    overview.add_row("Culturally relevant",   str(relevant), f"{relevant/total*100:.1f}%")
+    overview.add_row("Culturally neutral",    str(neutral),  f"{neutral/total*100:.1f}%")
+
+    # avg dimensions per relevant conversation
+    dims_per_conv = [len(a.relevant_dimensions) for a in relevant_anns]
+    if dims_per_conv:
+        overview.add_row("Avg dimensions / relevant conv", f"{mean(dims_per_conv):.1f}", "")
+        overview.add_row("Median dimensions / relevant conv", f"{median(dims_per_conv):.1f}", "")
+
+    # avg turns
+    all_turns = [a.num_turns for a in annotations if a.num_turns]
+    if all_turns:
+        rel_turns = [a.num_turns for a in relevant_anns if a.num_turns]
+        neu_turns = [a.num_turns for a in neutral_anns  if a.num_turns]
+        overview.add_row("Avg turns (all)",      f"{mean(all_turns):.1f}", "")
+        if rel_turns:
+            overview.add_row("Avg turns (relevant)", f"{mean(rel_turns):.1f}", "")
+        if neu_turns:
+            overview.add_row("Avg turns (neutral)",  f"{mean(neu_turns):.1f}", "")
+
+    console.print(overview)
+
+    # ── Dimension frequency ─────────────────────────────────────────────────
+    dim_counts:      Counter = Counter()
+    dim_conf_sums:   dict    = defaultdict(float)
+    dim_names:       dict    = {}
+    dim_categories:  dict    = {}
+
     for ann in annotations:
-        for match in ann.relevant_dimensions:
-            dim_counter[match.dimension_key] += 1
+        for m in ann.relevant_dimensions:
+            dim_counts[m.dimension_key] += 1
+            dim_conf_sums[m.dimension_key] += m.confidence
+            dim_names[m.dimension_key]      = m.dimension_name
+            dim_categories[m.dimension_key] = m.category
 
-    if dim_counter:
-        print(f"\n  Top 10 dimensions:")
-        for key, cnt in dim_counter.most_common(10):
-            print(f"    {key:<45} {cnt}")
-    print("=" * 50)
+    if dim_counts:
+        console.rule("[bold]Top 20 Dimensions[/bold]")
+        dim_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
+        dim_table.add_column("Rank",       justify="right",  style="dim", width=5)
+        dim_table.add_column("Key",        style="cyan",     no_wrap=True)
+        dim_table.add_column("Name",       style="white")
+        dim_table.add_column("Count",      justify="right",  style="bold green")
+        dim_table.add_column("%",          justify="right",  style="dim")
+        dim_table.add_column("Avg Conf",   justify="right",  style="yellow")
+
+        for rank, (key, cnt) in enumerate(dim_counts.most_common(20), 1):
+            avg_conf = dim_conf_sums[key] / cnt
+            dim_table.add_row(
+                str(rank),
+                key,
+                dim_names.get(key, ""),
+                str(cnt),
+                f"{cnt/total*100:.1f}%",
+                f"{avg_conf:.2f}",
+            )
+        console.print(dim_table)
+
+    # ── Category rollup ─────────────────────────────────────────────────────
+    cat_counts: Counter = Counter()
+    for key, cnt in dim_counts.items():
+        # category string is "Layer > Category > Topic Aspect"
+        # roll up to "Layer > Category"
+        parts = dim_categories.get(key, "Unknown").split(" > ")
+        cat_label = " > ".join(parts[:2]) if len(parts) >= 2 else parts[0]
+        cat_counts[cat_label] += cnt
+
+    if cat_counts:
+        console.rule("[bold]Category Breakdown[/bold]")
+        cat_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
+        cat_table.add_column("Category", style="magenta")
+        cat_table.add_column("Count",    justify="right", style="bold green")
+        cat_table.add_column("%",        justify="right", style="dim")
+        total_matches = sum(cat_counts.values())
+        for cat, cnt in cat_counts.most_common():
+            cat_table.add_row(cat, str(cnt), f"{cnt/total_matches*100:.1f}%")
+        console.print(cat_table)
+
+    # ── Country breakdown ────────────────────────────────────────────────────
+    country_total:    Counter = Counter()
+    country_relevant: Counter = Counter()
+    for ann in annotations:
+        c = ann.metadata.get("country") or "Unknown"
+        country_total[c] += 1
+        if ann.is_culturally_relevant:
+            country_relevant[c] += 1
+
+    if len(country_total) > 1:
+        console.rule("[bold]Top 15 Countries[/bold]")
+        cty_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
+        cty_table.add_column("Country",    style="blue")
+        cty_table.add_column("Total",      justify="right")
+        cty_table.add_column("Relevant",   justify="right", style="bold green")
+        cty_table.add_column("Rel %",      justify="right", style="dim")
+        for country, tot in country_total.most_common(15):
+            rel = country_relevant[country]
+            cty_table.add_row(country, str(tot), str(rel), f"{rel/tot*100:.1f}%")
+        console.print(cty_table)
+
+    # ── Model breakdown ──────────────────────────────────────────────────────
+    model_total:    Counter = Counter()
+    model_relevant: Counter = Counter()
+    for ann in annotations:
+        m = ann.metadata.get("model") or "unknown"
+        model_total[m] += 1
+        if ann.is_culturally_relevant:
+            model_relevant[m] += 1
+
+    if len(model_total) > 1:
+        console.rule("[bold]Model Breakdown[/bold]")
+        mdl_table = Table(box=box.SIMPLE, show_header=True, padding=(0, 1))
+        mdl_table.add_column("Model",    style="cyan")
+        mdl_table.add_column("Total",    justify="right")
+        mdl_table.add_column("Relevant", justify="right", style="bold green")
+        mdl_table.add_column("Rel %",    justify="right", style="dim")
+        for model, tot in model_total.most_common():
+            rel = model_relevant[model]
+            mdl_table.add_row(model, str(tot), str(rel), f"{rel/tot*100:.1f}%")
+        console.print(mdl_table)
 
 
 def cmd_stats(args: argparse.Namespace) -> None:
@@ -152,16 +274,19 @@ def cmd_stats(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
+    # Shared --verbose flag added to every subparser via a parent parser
+    verbose_parser = argparse.ArgumentParser(add_help=False)
+    verbose_parser.add_argument("--verbose", "-v", action="store_true")
+
     parser = argparse.ArgumentParser(
         prog="culture-chat",
         description="Annotate WildChat conversations for cultural relevance using CultureScope.",
     )
-    parser.add_argument("--verbose", "-v", action="store_true")
 
     sub = parser.add_subparsers(dest="command", required=True)
 
     # -- annotate --
-    p_ann = sub.add_parser("annotate", help="Annotate conversations and write JSONL output")
+    p_ann = sub.add_parser("annotate", parents=[verbose_parser], help="Annotate conversations and write JSONL output")
     p_ann.add_argument("--input", "-i", help="Local JSONL file of conversations (from `sample`). If omitted, streams from HuggingFace.")
     p_ann.add_argument("--output", "-o", required=True, help="Output JSONL file for annotations")
     p_ann.add_argument("--backend", default="anthropic", choices=["anthropic", "vllm"], help="Backend to use (default: anthropic)")
@@ -174,14 +299,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_ann.add_argument("--language", default=None, help="Filter by language (e.g. 'English')")
 
     # -- sample --
-    p_sam = sub.add_parser("sample", help="Download and save a WildChat sample to JSONL")
+    p_sam = sub.add_parser("sample", parents=[verbose_parser], help="Download and save a WildChat sample to JSONL")
     p_sam.add_argument("--output", "-o", required=True, help="Output JSONL file")
     p_sam.add_argument("--n", type=int, default=None, help="Number of conversations to save")
     p_sam.add_argument("--min-turns", type=int, default=6)
     p_sam.add_argument("--language", default=None)
 
     # -- stats --
-    p_sta = sub.add_parser("stats", help="Print statistics from an annotation JSONL file")
+    p_sta = sub.add_parser("stats", parents=[verbose_parser], help="Print statistics from an annotation JSONL file")
     p_sta.add_argument("--input", "-i", required=True, help="Annotation JSONL file")
 
     return parser
@@ -190,7 +315,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    _setup_logging(args.verbose)
+    _setup_logging(getattr(args, "verbose", False))
 
     dispatch = {
         "annotate": cmd_annotate,
