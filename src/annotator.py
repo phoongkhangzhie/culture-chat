@@ -37,6 +37,9 @@ class Annotator:
         # Anthropic (default)
         annotator = Annotator(backend="anthropic", model="claude-sonnet-4-6")
 
+        # OpenAI
+        annotator = Annotator(backend="openai", model="gpt-4o")
+
         # Local vLLM
         annotator = Annotator(
             backend="vllm",
@@ -49,7 +52,7 @@ class Annotator:
 
     def __init__(
         self,
-        backend: str = "anthropic",         # "anthropic" | "vllm"
+        backend: str = "anthropic",         # "anthropic" | "openai" | "vllm"
         model: str = "claude-sonnet-4-6",
         base_url: str = "http://localhost:8000/v1",  # used only for vllm
         max_tokens: int = 2048,
@@ -57,8 +60,8 @@ class Annotator:
         retry_delay: float = 2.0,
         requests_per_minute: int = 5,
     ) -> None:
-        if backend not in ("anthropic", "vllm"):
-            raise ValueError(f"backend must be 'anthropic' or 'vllm', got {backend!r}")
+        if backend not in ("anthropic", "openai", "vllm"):
+            raise ValueError(f"backend must be 'anthropic', 'openai', or 'vllm', got {backend!r}")
 
         self.backend = backend
         self.model = model
@@ -73,7 +76,11 @@ class Annotator:
             import anthropic as _anthropic
             self._anthropic_client = _anthropic.Anthropic()
             self._openai_client = None
-        else:
+        elif backend == "openai":
+            from openai import OpenAI
+            self._openai_client = OpenAI()  # reads OPENAI_API_KEY from env
+            self._anthropic_client = None
+        else:  # vllm
             from openai import OpenAI
             self._openai_client = OpenAI(base_url=base_url, api_key="EMPTY")
             self._anthropic_client = None
@@ -181,7 +188,7 @@ class Annotator:
                 if self.backend == "anthropic":
                     return self._call_anthropic(user_prompt)
                 else:
-                    return self._call_vllm(user_prompt)
+                    return self._call_openai_compatible(user_prompt)
             except Exception as exc:
                 # Anthropic rate-limit gets a longer back-off
                 import anthropic as _anthropic
@@ -204,7 +211,8 @@ class Annotator:
         )
         return message.content[0].text
 
-    def _call_vllm(self, user_prompt: str) -> str:
+    def _call_openai_compatible(self, user_prompt: str) -> str:
+        """Shared call for both OpenAI API and vLLM (OpenAI-compatible)."""
         response = self._openai_client.chat.completions.create(
             model=self.model,
             max_tokens=self.max_tokens,

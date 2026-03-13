@@ -6,7 +6,7 @@ Override any value via environment variable or by editing this file.
 
 import os
 
-# Backend: "anthropic" or "vllm"
+# Backend: "anthropic", "openai", or "vllm"
 backend: str = os.getenv("CULTURE_CHAT_BACKEND", "anthropic")
 
 # Model name — Claude ID for Anthropic, served model name for vLLM
